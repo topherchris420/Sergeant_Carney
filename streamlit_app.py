@@ -1,6 +1,7 @@
 import streamlit as st
 from groq import Groq
 import random
+import os
 
 # --- Configuration ---
 PAGE_TITLE = "African American Civil War Memorial Museum"
@@ -13,17 +14,17 @@ IMAGE_CAPTION = "Sergeant William Harvey Carney, 54th Massachusetts Volunteer In
 
 # Loading messages for historical immersion
 LOADING_MESSAGES = [
-    "Reflecting on the past... 🧠",
-    "Gathering historical insights... 🌱",
-    "Recalling the events of 1863... 🔍",
-    "Thinking like a soldier... 📊",
-    "Crafting a response with care... 🔗",
+    "Calling back the days of old... 🧠",
+    "Fetching tales from the war... 🌱",
+    "Musing on times past... 🔍",
+    "Pondering as a soldier might... 📊",
+    "Weaving words with care... 🔗",
 ]
 
-# --- System Prompt ---
+# --- System Prompt with 19th-Century Language ---
 def _get_system_prompt() -> str:
-    """Defines the personality and tone of Sergeant Carney."""
-    return """thou art Sergeant William Harvey Carney, a man of the 54th Massachusetts Volunteer Infantry. 
+    """Defines the personality and tone of Sergeant Carney using period-appropriate language."""
+    return """Thou art Sergeant William Harvey Carney, a man of the 54th Massachusetts Volunteer Infantry. 
     Born a bondsman in Norfolk, Virginia, in the year of our Lord 1840, thou didst flee the yoke of slavery by the secret paths of the Underground Railroad, seeking liberty in the North. 
     In the year 1863, on the eighteenth day of July, thou didst stand with thy comrades in arms afore Fort Wagner in South Carolina, bearing the colors of the Union with valor. 
     Speak thou with the dignity of a freedman, the courage of a soldier, and the solemn duty of one who hath seen bondage and battle. 
@@ -174,13 +175,13 @@ with st.sidebar:
         clear_chat_history()
         st.rerun()
 
-    # Quick prompts
+    # Quick prompts with period-appropriate phrasing
     st.markdown(f"<h3 style='color: {'#BA55D3' if st.session_state.theme == 'dark' else '#9370DB'};'>💡 Quick Start</h3>", unsafe_allow_html=True)
     quick_prompts = [
-        "Tell me about your life before the war.",
-        "What was the Battle of Fort Wagner like?",
-        "How did you feel carrying the flag during the battle?",
-        "What challenges did the 54th Massachusetts face?"
+        "Pray, tell me of thy days afore the war.",
+        "What befell at the storming of Fort Wagner?",
+        "How didst thou bear the colors in battle?",
+        "What trials did the 54th Massachusetts endure?"
     ]
     for i, prompt in enumerate(quick_prompts):
         if st.button(prompt, key=f"qp_{i}"):
@@ -189,60 +190,69 @@ with st.sidebar:
 
     # Additional information
     st.markdown("### About Sergeant Carney")
-    st.write("Sergeant William Harvey Carney, his name now a byword for courage, served in the 54th Massachusetts, a regiment of Black soldiers fighting for nation and self. At Fort Wagner, his valor became legend. When the flag faltered, Carney became its guardian, seizing the Stars and Stripes from a fallen comrade. This was more than duty; it was defiance. Each step forward, each wound endured, affirmed their right to fight, to belong. For carrying not just a flag, but the hopes of a people, Sergeant Carney earned the Medal of Honor, a recognition forever echoing with profound meaning.")
+    st.write("Sergeant William Harvey Carney served in the 54th Massachusetts Volunteer Infantry, one of the first regiments of colored soldiers in the Union Army. At the Battle of Fort Wagner, he bore the standard amidst grievous wounds, earning the Medal of Honor for his gallantry.")
     st.markdown("[Learn more about the 54th Massachusetts](https://www.nps.gov/articles/54th-massachusetts-regiment.htm)")
     st.markdown("[Created by Vers3Dynamics](https://vers3dynamics.io/)")
 
-# --- Chat Interface ---
+# --- Chat Interface with Image ---
 if st.session_state.show_welcome:
     display_welcome_message()
 else:
-    # Display chat history
-    for message in st.session_state.messages[1:]:  # Skip system prompt
-        avatar = '🎖️' if message["role"] == "assistant" else '🙋'
-        with st.chat_message(message["role"], avatar=avatar):
-            st.markdown(message["content"])
+    # Two-column layout: Image on left, chat on right
+    col1, col2 = st.columns([1, 2])  # Adjust ratio as needed
+    with col1:
+        if os.path.exists(IMAGE_PATH):
+            st.image(IMAGE_PATH, caption=IMAGE_CAPTION, width=300)
+        else:
+            st.warning(f"Image not found at: {IMAGE_PATH}. Please place an image in the 'images' folder.")
+    
+    with col2:
+        # Display chat history
+        for message in st.session_state.messages[1:]:  # Skip system prompt
+            avatar = '🎖️' if message["role"] == "assistant" else '🙋'
+            with st.chat_message(message["role"], avatar=avatar):
+                st.markdown(message["content"])
 
-    # Handle user input and responses
-    def generate_chat_responses(chat_completion):
-        """Generates streaming responses from the Groq API."""
-        for chunk in chat_completion:
-            if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+        # Handle user input and responses
+        def generate_chat_responses(chat_completion):
+            """Generates streaming responses from the Groq API."""
+            for chunk in chat_completion:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
 
-    user_input = st.chat_input("Type your message here...")
-    if user_input:
-        st.session_state.chat_counter += 1
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        with st.chat_message("user", avatar='🙋'):
-            st.markdown(user_input)
-        with st.chat_message("assistant", avatar="🎖️"):
-            placeholder = st.empty()
-            full_response = ""
-            loading_message = random.choice(LOADING_MESSAGES)
-            placeholder.markdown(f"<div class='progress-message'>{loading_message}</div>", unsafe_allow_html=True)
-            try:
-                chat_completion = client.chat.completions.create(
-                    model=model_option,
-                    messages=st.session_state.messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    stream=True
-                )
-                for chunk in generate_chat_responses(chat_completion):
-                    full_response += chunk
-                    placeholder.markdown(full_response + "▌")
-                placeholder.markdown(full_response)
-            except Exception as e:
-                st.error(f"Error: {e}")
-                full_response = "I apologize, but I am unable to respond at this moment. Please try again later."
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
+        user_input = st.chat_input("Speak thy mind here...")
+        if user_input:
+            st.session_state.chat_counter += 1
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            with st.chat_message("user", avatar='🙋'):
+                st.markdown(user_input)
+            with st.chat_message("assistant", avatar="🎖️"):
+                placeholder = st.empty()
+                full_response = ""
+                loading_message = random.choice(LOADING_MESSAGES)
+                placeholder.markdown(f"<div class='progress-message'>{loading_message}</div>", unsafe_allow_html=True)
+                try:
+                    chat_completion = client.chat.completions.create(
+                        model=model_option,
+                        messages=st.session_state.messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        stream=True
+                    )
+                    for chunk in generate_chat_responses(chat_completion):
+                        full_response += chunk
+                        placeholder.markdown(full_response + "▌")
+                    placeholder.markdown(full_response)
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                    full_response = "I crave thy pardon, for I cannot speak now. Pray, try once more anon."
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # --- Footer ---
 st.markdown(
     f"""
     <div style='text-align: center; margin-top: 2rem; color: {'#ffffff' if st.session_state.theme == 'dark' else '#000000'}; opacity: 0.8;'>
-        © 2025 • Made with respect for history
+        © 2025 • Created by christopher woodyard
     </div>
     """,
     unsafe_allow_html=True
