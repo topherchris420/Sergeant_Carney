@@ -192,7 +192,8 @@ with st.sidebar:
     st.markdown("### About Sergeant Carney")
     st.write("Sergeant William Harvey Carney served in the 54th Massachusetts Volunteer Infantry, one of the first regiments of colored soldiers in the Union Army. At the Battle of Fort Wagner, he bore the standard amidst grievous wounds, earning the Medal of Honor for his gallantry.")
     st.markdown("[Learn more about the 54th Massachusetts](https://www.nps.gov/articles/54th-massachusetts-regiment.htm)")
-    st.markdown("[Created by Vers3Dynamics](https://vers3dynamics.io/)")
+    st.markdown("[Vers3Dynamics](https://vers3dynamics.io/)")
+    st.markdown("[Quantum and Wellness apps](https://woodyard.streamlit.app/)")
 
 # --- Chat Interface with Image ---
 if st.session_state.show_welcome:
@@ -252,7 +253,7 @@ else:
 st.markdown(
     f"""
     <div style='text-align: center; margin-top: 2rem; color: {'#ffffff' if st.session_state.theme == 'dark' else '#000000'}; opacity: 0.8;'>
-        © 2025 • Created by christopher woodyard
+        © 2025 • Created by Christopher Woodyard
     </div>
     """,
     unsafe_allow_html=True
