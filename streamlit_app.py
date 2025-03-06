@@ -120,7 +120,7 @@ def display_welcome_message():
             st.markdown(
                 f"""
                 <div class='welcome-card'>
-                    <h1 style="color: {'#BA55D3' if st.session_state.theme == 'dark' else '#9370DB'};">Welcome to {APP_NAME} 🌟</h1>
+                    <h1 style="color: {'#BA55D3' if st.session_state.theme == 'dark' else '#9370DB'};">Hey, this is {APP_NAME} 💪🏾</h1>
                     <p style="font-size: 1.3rem; color: {text_color};">Engage in a conversation with Sergeant William Harvey Carney.</p>
                     <p style="font-size: 1.2rem; color: {text_color};">Learn about his experiences in the Civil War and the legacy of the 54th Massachusetts.</p>
                 </div>
