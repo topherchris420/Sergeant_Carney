@@ -176,7 +176,7 @@ with st.sidebar:
         st.rerun()
 
     # Quick prompts with period-appropriate phrasing
-    st.markdown(f"<h3 style='color: {'#BA55D3' if st.session_state.theme == 'dark' else '#9370DB'};'>💡 Quick Start</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: {'#BA55D3' if st.session_state.theme == 'dark' else '#9370DB'};'>💡 Idea Questions</h3>", unsafe_allow_html=True)
     quick_prompts = [
         "Pray, tell me of thy days afore the war.",
         "What befell at the storming of Fort Wagner?",
