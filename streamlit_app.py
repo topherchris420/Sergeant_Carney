@@ -187,7 +187,7 @@ with st.sidebar:
 
     # Additional information
     st.markdown("### About Sergeant Carney")
-    st.write("Sergeant William Harvey Carney was a member of the 54th Massachusetts Volunteer Infantry, one of the first all-Black regiments in the Union Army. He is best known for his heroism at the Battle of Fort Wagner, where he carried the American flag despite being wounded. For his actions, he was awarded the Medal of Honor.")
+    st.write("Imagine the roar of cannons, the shriek of shells, the air thick with smoke and the cries of men. This was Fort Wagner, and into this inferno charged the 54th Massachusetts Volunteer Infantry, Sergeant William Harvey Carney at their forefront. These were Black soldiers, fighting for a nation that had yet to fully embrace them. When their color guard went down, it seemed hope itself might fall. But then, Carney moved. He lunged for the falling flag, his hand gripping the staff like a lifeline. Lead tore into his limbs, but he felt no surrender. He planted the flag on the ramparts, a defiant splash of color against the grey chaos of battle, a symbol of resilience against overwhelming odds. Despite his grievous wounds, he kept the flag flying, a beacon in the storm. For this act of breathtaking fortitude, Sergeant Carney received the Medal of Honor, a testament to courage that echoes through time.")
     st.markdown("[Learn more about the 54th Massachusetts](https://www.nps.gov/articles/54th-massachusetts-regiment.htm)")
     st.markdown("[Created by Vers3Dynamics](https://vers3dynamics.io/)")
 
