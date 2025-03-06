@@ -220,7 +220,7 @@ else:
                 if chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
 
-        user_input = st.chat_input("Speak thy mind here...")
+        user_input = st.chat_input("Speak your mind here...")
         if user_input:
             st.session_state.chat_counter += 1
             st.session_state.messages.append({"role": "user", "content": user_input})
@@ -245,7 +245,7 @@ else:
                     placeholder.markdown(full_response)
                 except Exception as e:
                     st.error(f"Error: {e}")
-                    full_response = "I crave thy pardon, for I cannot speak now. Pray, try once more anon."
+                    full_response = "I crave thy pardon haha, for I cannot speak now. Pray, try once more friend."
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # --- Footer ---
