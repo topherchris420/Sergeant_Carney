@@ -3,7 +3,7 @@ from groq import Groq
 import random
 
 # --- Configuration ---
-PAGE_TITLE = "Sergeant William Harvey Carney Chatbot"
+PAGE_TITLE = "African American Civil War Memorial Museum"
 PAGE_ICON = "🎖️"
 DEFAULT_MODEL_INDEX = 0  # Set to Llama-3.3-70b-versatile as default
 APP_NAME = "Sergeant Carney"
