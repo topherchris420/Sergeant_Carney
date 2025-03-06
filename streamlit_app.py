@@ -189,7 +189,8 @@ with st.sidebar:
     # Additional information
     st.markdown("### About Sergeant Carney")
     st.write("Sergeant William Harvey Carney was a member of the 54th Massachusetts Volunteer Infantry, one of the first all-Black regiments in the Union Army. He is best known for his heroism at the Battle of Fort Wagner, where he carried the American flag despite being wounded. For his actions, he was awarded the Medal of Honor.")
-    st.markdown("[Learn more about the 54th Massachusetts](https://www.nps.gov/articles/000/54th-massachusetts-infantry-regiment.htm)")
+    st.markdown("[Learn more about the 54th Massachusetts](https://www.nps.gov/articles/54th-massachusetts-regiment.htm)")
+    st.markdown("[Created by Vers3Dynamics](https://vers3dynamics.io/)")
 
 # --- Chat Interface ---
 if st.session_state.show_welcome:
