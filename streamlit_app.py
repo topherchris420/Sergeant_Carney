@@ -8,6 +8,8 @@ PAGE_ICON = "🎖️"
 DEFAULT_MODEL_INDEX = 0  # Set to Llama-3.3-70b-versatile as default
 APP_NAME = "Sergeant Carney"
 APP_TAGLINE = "A Conversation with a Civil War Hero"
+IMAGE_PATH = os.path.join("images", "william_harvey_carney.jpg")  # Adjust this path to your image file
+IMAGE_CAPTION = "Sergeant William Harvey Carney, 54th Massachusetts Volunteer Infantry"
 
 # Loading messages for historical immersion
 LOADING_MESSAGES = [
