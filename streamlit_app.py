@@ -2,6 +2,9 @@ import streamlit as st
 from groq import Groq
 import random
 import os
+import base64
+import time
+from io import BytesIO
 
 # --- Configuration ---
 PAGE_TITLE = "African American Civil War Memorial Museum"
@@ -46,6 +49,14 @@ def load_css(theme="light"):
             div.stButton > button { background: linear-gradient(45deg, #4B0082, #8A2BE2); color: white !important; border-radius: 30px; padding: 1rem 2rem; font-size: 18px !important; border: none; }
             .progress-message { color: #BA55D3; font-size: 18px !important; }
             .welcome-card { padding: 2rem; background: linear-gradient(135deg, #2c2f33 0%, #16213e 100%); border-radius: 20px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5); border: 2px solid #4B0082; }
+            .record-button { background: linear-gradient(45deg, #B22222, #FF0000) !important; }
+            .record-button:hover { background: linear-gradient(45deg, #FF0000, #B22222) !important; }
+            .recording { animation: pulse 1.5s infinite; }
+            @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.5; }
+                100% { opacity: 1; }
+            }
         </style>
         """, unsafe_allow_html=True)
     else:
@@ -59,8 +70,153 @@ def load_css(theme="light"):
             div.stButton > button { background: linear-gradient(45deg, #9370DB, #DA70D6); color: black !important; border-radius: 30px; padding: 1rem 2rem; font-size: 18px !important; border: none; }
             .progress-message { color: #9370DB; font-size: 18px !important; }
             .welcome-card { padding: 2rem; background: linear-gradient(135deg, #f5f5dc 0%, #e4e8ed 100%); border-radius: 20px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); border: 2px solid #D8BFD8; }
+            .record-button { background: linear-gradient(45deg, #8B0000, #CD5C5C) !important; }
+            .record-button:hover { background: linear-gradient(45deg, #CD5C5C, #8B0000) !important; }
+            .recording { animation: pulse 1.5s infinite; }
+            @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.5; }
+                100% { opacity: 1; }
+            }
         </style>
         """, unsafe_allow_html=True)
+
+# --- Audio Recording Functions ---
+def audio_recorder():
+    """Creates a custom audio recorder widget."""
+    st.markdown("""
+    <script>
+    const audioRecorder = {
+        audioChunks: [],
+        mediaRecorder: null,
+        stream: null,
+        
+        async startRecording() {
+            try {
+                this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.mediaRecorder = new MediaRecorder(this.stream);
+                this.audioChunks = [];
+                
+                this.mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) this.audioChunks.push(e.data);
+                };
+                
+                this.mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(this.audioChunks);
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        const base64data = reader.result.split(',')[1];
+                        window.parent.postMessage({
+                            type: "audio-data",
+                            data: base64data
+                        }, "*");
+                    };
+                    this.stopStream();
+                };
+                
+                this.mediaRecorder.start();
+                const recordButton = document.getElementById('record-button');
+                recordButton.textContent = "⏹️ Stop Recording";
+                recordButton.classList.add("recording");
+            } catch (err) {
+                console.error("Error accessing microphone:", err);
+                window.parent.postMessage({
+                    type: "recording-error",
+                    error: err.message
+                }, "*");
+            }
+        },
+        
+        stopRecording() {
+            if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                this.mediaRecorder.stop();
+                const recordButton = document.getElementById('record-button');
+                recordButton.textContent = "🎤 Start Recording";
+                recordButton.classList.remove("recording");
+            }
+        },
+        
+        stopStream() {
+            if (this.stream) {
+                this.stream.getTracks().forEach(track => track.stop());
+            }
+        },
+        
+        toggleRecording() {
+            if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                this.stopRecording();
+            } else {
+                this.startRecording();
+            }
+        }
+    };
+    
+    // Create and insert record button
+    const recordButton = document.createElement('button');
+    recordButton.id = 'record-button';
+    recordButton.className = 'record-button';
+    recordButton.textContent = "🎤 Start Recording";
+    recordButton.style.padding = '10px 20px';
+    recordButton.style.borderRadius = '20px';
+    recordButton.style.margin = '10px 0';
+    recordButton.style.cursor = 'pointer';
+    recordButton.onclick = () => audioRecorder.toggleRecording();
+    
+    // Insert the button
+    document.currentScript.insertAdjacentElement('afterend', recordButton);
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Create a placeholder for receiving messages from JavaScript
+    audio_data = st.empty()
+    
+    # Listen for messages from JavaScript
+    st_js = """
+    <script>
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'audio-data') {
+            document.getElementById('audio-data').value = event.data.data;
+            document.getElementById('audio-form').submit();
+        } else if (event.data.type === 'recording-error') {
+            document.getElementById('recording-error').value = event.data.error;
+            document.getElementById('audio-form').submit();
+        }
+    });
+    </script>
+    <form id="audio-form" action="" target="_self" method="POST">
+        <input type="hidden" id="audio-data" name="audio_data">
+        <input type="hidden" id="recording-error" name="recording_error">
+    </form>
+    """
+    st.markdown(st_js, unsafe_allow_html=True)
+    
+    # Handle form submission
+    if 'audio_data' in st.experimental_get_query_params():
+        audio_data = st.experimental_get_query_params()['audio_data'][0]
+        return audio_data
+    
+    return None
+
+def process_audio(audio_data):
+    """Process audio data and transcribe using Groq's distil-whisper-large-v3-en model."""
+    try:
+        # Convert base64 to bytes
+        audio_bytes = base64.b64decode(audio_data)
+        
+        # Create a client for the Whisper API
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        
+        # Get transcription from Groq's distil-whisper-large-v3-en
+        transcription = client.audio.transcriptions.create(
+            model="distil-whisper-large-v3-en",
+            file=("audio.wav", BytesIO(audio_bytes)),
+        )
+        
+        return transcription.text
+    except Exception as e:
+        st.error(f"Error transcribing audio: {e}")
+        return None
 
 # --- Page Setup ---
 st.set_page_config(page_icon=PAGE_ICON, layout="wide", page_title=PAGE_TITLE, initial_sidebar_state="expanded")
@@ -76,6 +232,10 @@ if "show_welcome" not in st.session_state:
     st.session_state.show_welcome = True
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
+if "is_recording" not in st.session_state:
+    st.session_state.is_recording = False
+if "audio_data" not in st.session_state:
+    st.session_state.audio_data = None
 
 # Apply CSS
 load_css(st.session_state.theme)
@@ -123,6 +283,7 @@ def display_welcome_message():
                     <h1 style="color: {'#BA55D3' if st.session_state.theme == 'dark' else '#9370DB'};">Hey, this is {APP_NAME} 💪🏾</h1>
                     <p style="font-size: 1.3rem; color: {text_color};">Engage in a conversation with Sergeant William Harvey Carney.</p>
                     <p style="font-size: 1.2rem; color: {text_color};">Learn about his experiences in the Civil War and the legacy of the 54th Massachusetts.</p>
+                    <p style="font-size: 1.2rem; color: {text_color};">You can type your questions or click the microphone button to speak.</p>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -221,7 +382,25 @@ else:
                 if chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
 
-        user_input = st.chat_input("Speak your mind here...")
+        # Add voice input option
+        st.write("Ask your question:")
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            user_input = st.chat_input("Type your question here...")
+        
+        with col2:
+            # Add audio recording capability
+            audio_data = audio_recorder()
+            if audio_data:
+                # Process the audio and get transcription
+                with st.spinner("Transcribing your speech..."):
+                    transcription = process_audio(audio_data)
+                    if transcription:
+                        st.session_state.audio_data = None
+                        user_input = transcription
+                        st.success(f"You said: {transcription}")
+        
         if user_input:
             st.session_state.chat_counter += 1
             st.session_state.messages.append({"role": "user", "content": user_input})
