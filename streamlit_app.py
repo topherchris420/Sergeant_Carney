@@ -191,9 +191,9 @@ def audio_recorder():
     """
     st.markdown(st_js, unsafe_allow_html=True)
     
-    # Handle form submission
-    if 'audio_data' in st.experimental_get_query_params():
-        audio_data = st.experimental_get_query_params()['audio_data'][0]
+    # Handle form submission - UPDATED to use st.query_params instead of st.experimental_get_query_params
+    if 'audio_data' in st.query_params:
+        audio_data = st.query_params['audio_data']
         return audio_data
     
     return None
