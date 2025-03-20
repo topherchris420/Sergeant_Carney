@@ -9,7 +9,7 @@ from io import BytesIO
 # --- Configuration ---
 PAGE_TITLE = "African American Civil War Memorial Museum"
 PAGE_ICON = "🎖️"
-DEFAULT_MODEL_INDEX = 0  # Set to Llama-3.3-70b-versatile as default
+DEFAULT_MODEL_INDEX = 1  
 APP_NAME = "Sergeant Carney"
 APP_TAGLINE = "A Conversation with a Civil War Hero"
 IMAGE_PATH = os.path.join("images", "max1200.jpg")  # Adjust this path to your image file
