@@ -1,4 +1,4 @@
-Please integrate groq's distil-whisper-large-v3-en to the app so users can verbally ask the chatbot on Streamlit questions: import streamlit as st
+import streamlit as st
 from groq import Groq
 import random
 import os
