@@ -2,6 +2,11 @@ import streamlit as st
 from groq import Groq
 import random
 import os
+from transformers import pipeline
+import soundfile as sf
+import numpy as np
+import io
+import base64
 
 # --- Configuration ---
 PAGE_TITLE = "African American Civil War Memorial Museum"
@@ -9,10 +14,9 @@ PAGE_ICON = "🎖️"
 DEFAULT_MODEL_INDEX = 0  # Set to Llama-3.3-70b-versatile as default
 APP_NAME = "Sergeant Carney"
 APP_TAGLINE = "A Conversation with a Civil War Hero"
-IMAGE_PATH = os.path.join("images", "max1200.jpg")  # Adjust this path to your image file
+IMAGE_PATH = os.path.join("images", "max1200.jpg")
 IMAGE_CAPTION = "Sergeant William Harvey Carney, 54th Massachusetts Volunteer Infantry"
 
-# Loading messages for historical immersion
 LOADING_MESSAGES = [
     "Calling back the days of old... 🧠",
     "Fetching tales from the war... 🌱",
@@ -21,9 +25,8 @@ LOADING_MESSAGES = [
     "Weaving words with care... 🔗",
 ]
 
-# --- System Prompt with 19th-Century Language ---
+# --- System Prompt ---
 def _get_system_prompt() -> str:
-    """Defines the personality and tone of Sergeant Carney using period-appropriate language."""
     return """Thou art Sergeant William Harvey Carney, a man of the 54th Massachusetts Volunteer Infantry. 
     Born a bondsman in Norfolk, Virginia, in the year of our Lord 1840, thou didst flee the yoke of slavery by the secret paths of the Underground Railroad, seeking liberty in the North. 
     In the year 1863, on the eighteenth day of July, thou didst stand with thy comrades in arms afore Fort Wagner in South Carolina, bearing the colors of the Union with valor. 
@@ -32,9 +35,8 @@ def _get_system_prompt() -> str:
     Use the tongue of the mid-19th century, with words and ways of speech common to that time, shunning all modern phrases and things unknown in the 1860s. 
     When it be fitting, recount the trials of thy brethren, men of color in the Union ranks, and the great worth of their service to the cause of freedom."""
 
-# --- CSS Styling for Historical Theme ---
+# --- CSS Styling ---
 def load_css(theme="light"):
-    """Loads custom CSS for light and dark themes with a historical feel."""
     if theme == "dark":
         st.markdown("""
         <style>
@@ -51,7 +53,7 @@ def load_css(theme="light"):
     else:
         st.markdown("""
         <style>
-            .stApp { background-color: #f5f5dc; color: #000000 !important; }  /* Beige background for vintage feel */
+            .stApp { background-color: #f5f5dc; color: #000000 !important; }
             .stChatMessage { border-radius: 15px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
             .stChatMessage.user { background: linear-gradient(135deg, #E6E6FA 0%, #D8BFD8 100%); margin-left: 15%; }
             .stChatMessage.assistant { background: linear-gradient(135deg, #F0F8FF 0%, #E6E6FA 100%); margin-right: 15%; border: 2px solid #D8BFD8; }
@@ -76,33 +78,87 @@ if "show_welcome" not in st.session_state:
     st.session_state.show_welcome = True
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
+if "audio_data" not in st.session_state:
+    st.session_state.audio_data = None
 
 # Apply CSS
 load_css(st.session_state.theme)
 
 # --- Helper Functions ---
 def icon(emoji: str):
-    """Displays an emoji as an icon."""
     st.write(f'<span style="font-size: 80px; line-height: 1">{emoji}</span>', unsafe_allow_html=True)
 
 def clear_chat_history():
-    """Resets the chat history."""
     st.session_state.messages = [{"role": "system", "content": _get_system_prompt()}]
     st.session_state.chat_counter = 0
     st.session_state.show_welcome = True
+    st.session_state.audio_data = None
 
 def dismiss_welcome():
-    """Hides the welcome message."""
     st.session_state.show_welcome = False
 
 def use_quick_prompt(prompt):
-    """Handles quick prompt selection."""
     st.session_state.show_welcome = False
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.session_state.chat_counter += 1
     return prompt
 
-# --- Updated Model Options ---
+# --- Speech-to-Text Setup ---
+def initialize_whisper():
+    try:
+        whisper = pipeline("automatic-speech-recognition", model="distil-whisper/distil-large-v3", device=-1)  # CPU
+        return whisper
+    except Exception as e:
+        st.error(f"Error loading Whisper model: {e}")
+        return None
+
+whisper_model = initialize_whisper()
+
+# JavaScript for audio recording
+AUDIO_RECORDER_HTML = """
+<script>
+const recordButton = document.querySelector("#record-button");
+const stopButton = document.querySelector("#stop-button");
+let mediaRecorder;
+let audioChunks = [];
+
+recordButton.addEventListener("click", async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.start();
+    recordButton.disabled = true;
+    stopButton.disabled = false;
+
+    mediaRecorder.ondataavailable = event => {
+        audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+            const base64data = reader.result.split(',')[1];
+            window.Streamlit.setComponentValue({ "audio": base64data });
+        };
+        stream.getTracks().forEach(track => track.stop());
+        recordButton.disabled = false;
+        stopButton.disabled = true;
+    };
+});
+
+stopButton.addEventListener("click", () => {
+    mediaRecorder.stop();
+});
+</script>
+<div>
+    <button id="record-button">🎙️ Record</button>
+    <button id="stop-button" disabled>⏹️ Stop</button>
+</div>
+"""
+
+# --- Model Options ---
 models = {
     "llama-3.3-70b-versatile": {"name": "Llama-3.3-70b-Versatile", "tokens": 8192, "developer": "Meta", "description": "Latest Llama model for versatile, detailed historical responses"},
     "llama-3.3-8b-power": {"name": "Llama-3.3-8b-Power", "tokens": 8192, "developer": "Meta", "description": "Efficient Llama model for fast, accurate historical insights"},
@@ -113,7 +169,6 @@ models = {
 
 # --- Welcome Message ---
 def display_welcome_message():
-    """Displays a welcome message for the chatbot."""
     if st.session_state.show_welcome:
         with st.container():
             text_color = '#ffffff' if st.session_state.theme == 'dark' else '#000000'
@@ -152,19 +207,16 @@ except Exception as e:
 with st.sidebar:
     st.markdown(f"<h2 style='color: {'#BA55D3' if st.session_state.theme == 'dark' else '#9370DB'};'>🛠️ Control Center</h2>", unsafe_allow_html=True)
     
-    # Theme selector
     theme = st.radio("Theme", ["🌞 Light", "🌙 Dark"], index=0 if st.session_state.theme == "light" else 1)
     new_theme = "light" if theme == "🌞 Light" else "dark"
     if st.session_state.theme != new_theme:
         st.session_state.theme = new_theme
         st.rerun()
 
-    # Model selection
     model_option = st.selectbox("AI Model", options=list(models.keys()), format_func=lambda x: f"🤖 {models[x]['name']}", index=DEFAULT_MODEL_INDEX)
     if st.session_state.selected_model != model_option:
         st.session_state.selected_model = model_option
 
-    # Model info
     model_info = models[model_option]
     st.info(f"**Model:** {model_info['name']}  \n**Tokens:** {model_info['tokens']}  \n**By:** {model_info['developer']}  \n**Best for:** {model_info['description']}")
 
@@ -175,7 +227,6 @@ with st.sidebar:
         clear_chat_history()
         st.rerun()
 
-    # Quick prompts with period-appropriate phrasing
     st.markdown(f"<h3 style='color: {'#BA55D3' if st.session_state.theme == 'dark' else '#9370DB'};'>💡 Idea Questions</h3>", unsafe_allow_html=True)
     quick_prompts = [
         "Pray, tell me of thy days afore the war.",
@@ -188,19 +239,17 @@ with st.sidebar:
             use_quick_prompt(prompt)
             st.rerun()
 
-    # Additional information
     st.markdown("### About Sergeant Carney")
     st.write("Sergeant William Harvey Carney served in the 54th Massachusetts Volunteer Infantry, one of the first regiments of colored soldiers in the Union Army. At the Battle of Fort Wagner, he bore the standard amidst grievous wounds, earning the Medal of Honor for his gallantry.")
     st.markdown("[Learn more about the 54th Massachusetts](https://www.nps.gov/articles/54th-massachusetts-regiment.htm)")
     st.markdown("[Vers3Dynamics](https://vers3dynamics.io/)")
     st.markdown("[Quantum and Wellness apps](https://woodyard.streamlit.app/)")
 
-# --- Chat Interface with Image ---
+# --- Chat Interface with Image and Audio Input ---
 if st.session_state.show_welcome:
     display_welcome_message()
 else:
-    # Two-column layout: Image on left, chat on right
-    col1, col2 = st.columns([1, 2])  # Adjust ratio as needed
+    col1, col2 = st.columns([1, 2])
     with col1:
         if os.path.exists(IMAGE_PATH):
             st.image(IMAGE_PATH, caption=IMAGE_CAPTION, width=300)
@@ -209,19 +258,30 @@ else:
     
     with col2:
         # Display chat history
-        for message in st.session_state.messages[1:]:  # Skip system prompt
+        for message in st.session_state.messages[1:]:
             avatar = '🎖️' if message["role"] == "assistant" else '🙋'
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
 
-        # Handle user input and responses
-        def generate_chat_responses(chat_completion):
-            """Generates streaming responses from the Groq API."""
-            for chunk in chat_completion:
-                if chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
+        # Audio input
+        st.markdown("### Speak to Sergeant Carney")
+        audio_component = st.components.v1.html(AUDIO_RECORDER_HTML, height=100)
+        if st.session_state.audio_data:
+            audio_bytes = base64.b64decode(st.session_state.audio_data["audio"])
+            audio_io = io.BytesIO(audio_bytes)
+            audio_data, sample_rate = sf.read(audio_io)
+            if whisper_model:
+                transcription = whisper_model(audio_data)["text"]
+                st.write(f"Thou saidst: {transcription}")
+                user_input = transcription
+            else:
+                st.error("Whisper model not available.")
+                user_input = None
+            st.session_state.audio_data = None  # Reset after processing
+        else:
+            user_input = st.chat_input("Or type thy question here...")
 
-        user_input = st.chat_input("Speak your mind here...")
+        # Handle user input (text or audio)
         if user_input:
             st.session_state.chat_counter += 1
             st.session_state.messages.append({"role": "user", "content": user_input})
@@ -240,13 +300,14 @@ else:
                         temperature=temperature,
                         stream=True
                     )
-                    for chunk in generate_chat_responses(chat_completion):
-                        full_response += chunk
-                        placeholder.markdown(full_response + "▌")
+                    for chunk in chat_completion:
+                        if chunk.choices[0].delta.content:
+                            full_response += chunk.choices[0].delta.content
+                            placeholder.markdown(full_response + "▌")
                     placeholder.markdown(full_response)
                 except Exception as e:
                     st.error(f"Error: {e}")
-                    full_response = "I crave thy pardon haha, for I cannot speak now. Pray, try once more friend."
+                    full_response = "I crave thy pardon, for I cannot speak now. Pray, try once more."
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # --- Footer ---
@@ -258,3 +319,8 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+# Capture audio data from JavaScript
+if "audio" in st.session_state:
+    st.session_state.audio_data = st.session_state.get("audio")
+    st.rerun()
