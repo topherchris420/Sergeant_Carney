@@ -210,7 +210,7 @@ def process_audio(audio_data):
         # Get transcription from Groq's distil-whisper-large-v3-en
         transcription = client.audio.transcriptions.create(
             model="distil-whisper-large-v3-en",
-            file=("audio.wav", BytesIO(audio_bytes)),
+            file=("speech.wav", BytesIO(audio_bytes)),
         )
         
         return transcription.text
