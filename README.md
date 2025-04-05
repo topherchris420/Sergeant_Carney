@@ -1,10 +1,10 @@
-# Groq Chat Streamlit App
+# Civil War Hero App
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://groqdemo.streamlit.app/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://woodyard.streamlit.app/)
 
 ![Demo App Screenshot](images/groq_demo.png)
 
-This [Streamlit](https://streamlit.io/) app integrates with the [Groq API](https://groq.com/) to provide a chat interface where users can interact with advanced language models. It allows users to choose between two models for generating responses, enhancing the flexibility and user experience of the chat application.
+This [Streamlit](https://civilwarhero.streamlit.app/) app integrates with the [Groq API](https://groq.com/) to provide a chat interface where users can interact with advanced language models. It allows users to choose between two models for generating responses, enhancing the flexibility and user experience of the chat application.
 
 It is blazing FAST; try it and see! 🏎️ 💨 💨 💨
 
